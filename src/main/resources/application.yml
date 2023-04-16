@@ -1,0 +1,31 @@
+spring:
+  jpa:
+    show-sql: true
+    open-in-view: false
+  h2:
+    console:
+      enabled: true #Access from http://localhost:8080/h2-console/
+#    datasource:
+#        url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:flowable_test}?useUnicode=true&allowPublicKeyRetrieval=true
+#        username: ${MYSQL_USERNAME:root}
+#        password: ${MYSQL_PASSWORD:password}
+
+server:
+  port: 8081
+
+springdoc:
+  api-docs:
+    resolve-schema-properties: false
+  show-actuator: true
+  swagger-ui:
+    try-it-out-enabled: true
+  writer-with-order-by-keys: true
+  paths-to-match:
+    #    - /runtime/tasks/**
+    #    - /runtime/process-instances/**
+    #    - /management/**
+    #    - /history/**
+    - /api/**
+
+
+#debug: true
