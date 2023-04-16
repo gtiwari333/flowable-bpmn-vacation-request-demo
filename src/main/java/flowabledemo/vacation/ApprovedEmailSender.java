@@ -1,16 +1,18 @@
 package flowabledemo.vacation;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.flowable.engine.delegate.DelegateExecution;
 import org.flowable.engine.delegate.JavaDelegate;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 @Component("approvedEmailSender")
 @Slf4j
 public class ApprovedEmailSender implements JavaDelegate {
 
+    @SneakyThrows
     public void confirm(String employeeName, int numberOfDays) {
+        Thread.sleep(2000); //slow job
         log.info("Vacation request for {} for {} days was confirmed", employeeName, numberOfDays);
     }
 

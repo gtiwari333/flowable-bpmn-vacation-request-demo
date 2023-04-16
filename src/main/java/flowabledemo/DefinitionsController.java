@@ -1,12 +1,5 @@
 package flowabledemo;
 
-import java.io.InputStream;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
@@ -19,7 +12,6 @@ import org.flowable.engine.RepositoryService;
 import org.flowable.engine.RuntimeService;
 import org.flowable.engine.history.HistoricActivityInstance;
 import org.flowable.engine.history.HistoricProcessInstance;
-import org.flowable.engine.impl.ProcessDefinitionQueryProperty;
 import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.engine.repository.ProcessDefinitionQuery;
 import org.flowable.image.ProcessDiagramGenerator;
@@ -33,7 +25,15 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.InputStream;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 import static org.flowable.common.rest.api.PaginateListUtil.paginateList;
+import static org.flowable.engine.impl.ProcessDefinitionQueryProperty.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -67,6 +67,7 @@ public class DefinitionsController {
 
     @GetMapping(value = "/{processDefinitionId}/image", produces = MediaType.IMAGE_PNG_VALUE)
     public ResponseEntity<byte[]> getProcessImage(@PathVariable String processDefinitionId) {
+        //TODO: copy code from getModelResource and write into HttpServletResponse
         return processDefinitionImageResource.getModelResource(processDefinitionId);
     }
 
@@ -103,6 +104,7 @@ public class DefinitionsController {
             }
 
             InputStream is = processDiagramGenerator.generateDiagram(bpmnModel, "png", activityIds, 1.0d, true);
+            //TODO: write this into HttpServletResponse
             return ResponseEntity.ok(IOUtils.toByteArray(is));
         }
 
@@ -114,7 +116,10 @@ public class DefinitionsController {
                                                                             @RequestParam(defaultValue = "10", required = false) int size) {
         ProcessDefinitionQuery processDefinitionQuery = repositoryService.createProcessDefinitionQuery();
 
-        var allRequestParams = Map.of("start", String.valueOf(start), "size", String.valueOf(size));
+        var allRequestParams = Map.of(
+                "start", String.valueOf(start),
+                "size", String.valueOf(size)
+        );
         return paginateList(allRequestParams, processDefinitionQuery, "name", properties, restResponseFactory::createProcessDefinitionResponseList);
     }
 
@@ -122,12 +127,12 @@ public class DefinitionsController {
     private static final Map<String, QueryProperty> properties = new HashMap<>();
 
     static {
-        properties.put("id", ProcessDefinitionQueryProperty.PROCESS_DEFINITION_ID);
-        properties.put("key", ProcessDefinitionQueryProperty.PROCESS_DEFINITION_KEY);
-        properties.put("category", ProcessDefinitionQueryProperty.PROCESS_DEFINITION_CATEGORY);
-        properties.put("name", ProcessDefinitionQueryProperty.PROCESS_DEFINITION_NAME);
-        properties.put("version", ProcessDefinitionQueryProperty.PROCESS_DEFINITION_VERSION);
-        properties.put("deploymentId", ProcessDefinitionQueryProperty.DEPLOYMENT_ID);
-        properties.put("tenantId", ProcessDefinitionQueryProperty.PROCESS_DEFINITION_TENANT_ID);
+        properties.put("id", PROCESS_DEFINITION_ID);
+        properties.put("key", PROCESS_DEFINITION_KEY);
+        properties.put("category", PROCESS_DEFINITION_CATEGORY);
+        properties.put("name", PROCESS_DEFINITION_NAME);
+        properties.put("version", PROCESS_DEFINITION_VERSION);
+        properties.put("deploymentId", DEPLOYMENT_ID);
+        properties.put("tenantId", PROCESS_DEFINITION_TENANT_ID);
     }
 }

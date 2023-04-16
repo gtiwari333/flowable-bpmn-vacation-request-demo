@@ -76,7 +76,7 @@ Step 4: /review-vacation-request/{taskId} - approve (uses task id from Step 2)
     
     Mock email job 
 
-### Phase 0.1 - Add tests
+### Phase 0.1 - Add E2E tests - COMPLETED !
 
 ### Phase 1 - DB to store vacation request and pass around the request id in context
 

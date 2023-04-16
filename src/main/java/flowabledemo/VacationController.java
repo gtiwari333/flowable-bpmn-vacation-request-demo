@@ -1,23 +1,19 @@
 package flowabledemo;
 
+import flowabledemo.dto.TaskRepresentation;
 import flowabledemo.dto.VacationProcessResult;
 import flowabledemo.dto.VacationRequestInput;
 import flowabledemo.dto.VacationUpdateRequest;
 import flowabledemo.vacation.VacationAppealProcessor;
 import flowabledemo.vacation.VacationRequestProcessor;
 import flowabledemo.vacation.VacationRequestStarter;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.flowable.engine.TaskService;
-import org.flowable.task.api.Task;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -57,7 +53,7 @@ class VacationController {
     }
 
     @PostMapping(value = "/review-vacation-request/{taskId}")
-    public void updateVacationRequest(@RequestBody VacationProcessResult decision, @PathVariable String taskId) {
+    public void reviewVacationRequest(@RequestBody VacationProcessResult decision, @PathVariable String taskId) {
         vacationRequestProcessor.execute(decision, taskId);
     }
 
@@ -69,30 +65,6 @@ class VacationController {
                 .stream()
                 .map(TaskRepresentation::new)
                 .collect(toList());
-    }
-
-
-    @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
-    static class TaskRepresentation {
-
-        private String id;
-        private String name;
-        private String assignee;
-        private Map<String, Object> processVariables;
-        private Map<String, Object> localVariables;
-
-        TaskRepresentation(Task t) {
-            this.id = t.getId();
-            this.name = t.getName();
-            this.assignee = t.getAssignee();
-
-            //TODO: the variables are not mapped. fix/fetch it separately
-            this.processVariables = t.getProcessVariables();
-            this.localVariables = t.getTaskLocalVariables();
-        }
-
     }
 
 }
