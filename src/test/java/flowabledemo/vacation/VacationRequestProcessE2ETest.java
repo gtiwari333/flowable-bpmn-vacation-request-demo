@@ -52,7 +52,7 @@ class VacationRequestProcessE2ETest extends FlowableTestBase {
                 .containsExactly("vacationRequestProcess");
 
         //verify process created with expected variables
-        var vacationRequest = processes.get(0);
+        var vacationRequest = processes.getFirst();
         assertThat(vacationRequest.getProcessVariables())
                 .as("process variables")
                 .contains(
@@ -69,13 +69,13 @@ class VacationRequestProcessE2ETest extends FlowableTestBase {
         var managerTasks = vacationApi.fetchAvailableTasks("MANAGER");
 
         //claim task
-        vacationApi.claimTask(managerTasks.get(0).getId(), "Bob The Manager");
+        vacationApi.claimTask(managerTasks.getFirst().getId(), "Bob The Manager");
         System.out.println(getActivityIds(processInstanceId));
 
         //review and approve request
         vacationApi.reviewVacationRequest(VacationProcessResult.builder()
                 .vacationApproved(true)
-                .build(), managerTasks.get(0).getId());
+                .build(), managerTasks.getFirst().getId());
 
         //wait for async email sender task
         waitForAsyncTasks();
@@ -111,7 +111,7 @@ class VacationRequestProcessE2ETest extends FlowableTestBase {
                 .containsExactly("vacationRequestProcess");
 
         //verify process created with expected variables
-        var vacationRequest = processes.get(0);
+        var vacationRequest = processes.getFirst();
         assertThat(vacationRequest.getProcessVariables())
                 .as("process variables")
                 .contains(
@@ -126,12 +126,12 @@ class VacationRequestProcessE2ETest extends FlowableTestBase {
 
         //fetch manager tasks
         var managerTasks = vacationApi.fetchAvailableTasks("MANAGER");
-        vacationApi.claimTask(managerTasks.get(0).getId(), "Bob The Manager");
+        vacationApi.claimTask(managerTasks.getFirst().getId(), "Bob The Manager");
 
         //review and approve request
         vacationApi.reviewVacationRequest(VacationProcessResult.builder()
                 .vacationApproved(false)
-                .build(), managerTasks.get(0).getId());
+                .build(), managerTasks.getFirst().getId());
 
         //wait for async email sender task
         waitForAsyncTasks();
@@ -141,22 +141,22 @@ class VacationRequestProcessE2ETest extends FlowableTestBase {
 
         //claim task by employee
         var employeeTasks = vacationApi.fetchAvailableTasks("EMPLOYEE");
-        vacationApi.claimTask(employeeTasks.get(0).getId(), "Sally The Employee");
+        vacationApi.claimTask(employeeTasks.getFirst().getId(), "Sally The Employee");
         //appeal
         vacationApi.updateVacationRequest(VacationUpdateRequest.builder()
                 .numberOfDays(15)
                 .shouldAppeal(true)
-                .build(), employeeTasks.get(0).getId());
+                .build(), employeeTasks.getFirst().getId());
         System.out.println(getActivityIds(processInstanceId));
 
         //claim task by manager
         managerTasks = vacationApi.fetchAvailableTasks("MANAGER");
-        vacationApi.claimTask(managerTasks.get(0).getId(), "Bob The Manager");
+        vacationApi.claimTask(managerTasks.getFirst().getId(), "Bob The Manager");
 
         //review and approve request
         vacationApi.reviewVacationRequest(VacationProcessResult.builder()
                 .vacationApproved(true)
-                .build(), managerTasks.get(0).getId());
+                .build(), managerTasks.getFirst().getId());
 
         //wait for async email sender task
         waitForAsyncTasks();

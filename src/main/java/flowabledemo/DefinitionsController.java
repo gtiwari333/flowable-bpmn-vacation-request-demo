@@ -89,16 +89,16 @@ public class DefinitionsController {
         }
 
         List<String> activityIds = historyService.createHistoricActivityInstanceQuery()
-                .processInstanceId(historicProcessInstances.get(0).getId())
+                .processInstanceId(historicProcessInstances.getFirst().getId())
                 .listPage(0, 1000)
                 .stream().map(HistoricActivityInstance::getActivityId).toList();
 
-        String processDefinitionId = historicProcessInstances.get(0).getProcessDefinitionId();
+        String processDefinitionId = historicProcessInstances.getFirst().getProcessDefinitionId();
         ProcessDefinition processDefinition = repositoryService.getProcessDefinition(processDefinitionId);
         if (processDefinition != null && processDefinition.hasGraphicalNotation()) {
             ProcessDiagramGenerator processDiagramGenerator = new DefaultProcessDiagramGenerator();
             BpmnModel bpmnModel = repositoryService.getBpmnModel(processDefinition.getId());
-            if (bpmnModel.getLocationMap().size() == 0) {
+            if (bpmnModel.getLocationMap().isEmpty()) {
                 BpmnAutoLayout autoLayout = new BpmnAutoLayout(bpmnModel);
                 autoLayout.execute();
             }

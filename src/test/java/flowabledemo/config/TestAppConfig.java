@@ -4,8 +4,8 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.support.WebClientAdapter;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
 @TestConfiguration
@@ -16,22 +16,22 @@ public class TestAppConfig {
 
     @Bean
     VacationApi vacationApiClient() {
-        var webClient = WebClient.builder()
+        var webClient = RestClient.builder()
                 .baseUrl("http://localhost:" + port)
                 .build();
 
-        var factory = HttpServiceProxyFactory.builder(WebClientAdapter.forClient(webClient)).build();
+        var factory = HttpServiceProxyFactory.builderFor(RestClientAdapter.create(webClient)).build();
 
         return factory.createClient(VacationApi.class);
     }
 
     @Bean
     DefinitionsApi definitionsApi() {
-        var webClient = WebClient.builder()
+        var webClient = RestClient.builder()
                 .baseUrl("http://localhost:" + port)
                 .build();
 
-        var factory = HttpServiceProxyFactory.builder(WebClientAdapter.forClient(webClient)).build();
+        var factory = HttpServiceProxyFactory.builderFor(RestClientAdapter.create(webClient)).build();
 
         return factory.createClient(DefinitionsApi.class);
     }

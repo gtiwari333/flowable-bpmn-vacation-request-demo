@@ -125,7 +125,7 @@ public abstract class FlowableTestBase {
         historyService.createHistoricTaskInstanceQuery()
                 .processInstanceId(processInstanceId)
                 .list().forEach(h -> {
-                    assertNotNull("Task " + h.getTaskDefinitionKey() + " has no start time", h.getStartTime());
+                    assertNotNull("Task " + h.getTaskDefinitionKey() + " has no start time", h.getCreateTime());
                     assertNotNull("Task " + h.getTaskDefinitionKey() + " has no end time", h.getEndTime());
                 });
     }
