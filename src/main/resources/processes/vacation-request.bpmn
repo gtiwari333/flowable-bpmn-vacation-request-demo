@@ -28,7 +28,7 @@
       <outgoing>SequenceFlow_5</outgoing>
     </serviceTask>
     <sequenceFlow id="SequenceFlow_4" name="Vacation Approved" sourceRef="ExclusiveGateway_1" targetRef="sendApprovalEmailTask">
-      <conditionExpression xsi:type="tFormalExpression" id="FormalExpression_2" language="http://www.java.com/java">
+      <conditionExpression xsi:type="tFormalExpression" id="FormalExpression_2" >
                 ${vacationApproved}
             </conditionExpression>
     </sequenceFlow>
@@ -38,7 +38,7 @@
       <outgoing>SequenceFlow_7</outgoing>
     </serviceTask>
     <sequenceFlow id="SequenceFlow_6" name="Vacation Not Approved" sourceRef="ExclusiveGateway_1" targetRef="sendRejectionEmailTask">
-      <conditionExpression xsi:type="tFormalExpression" id="FormalExpression_3" language="http://www.java.com/java">
+      <conditionExpression xsi:type="tFormalExpression" id="FormalExpression_3" >
                 ${!vacationApproved}
             </conditionExpression>
     </sequenceFlow>
@@ -62,7 +62,7 @@
     </exclusiveGateway>
     <sequenceFlow id="SequenceFlow_8" sourceRef="UserTask_2" targetRef="ExclusiveGateway_2"/>
     <sequenceFlow id="SequenceFlow_9" name="Employee  Appealed and Resent Vacation Request" sourceRef="ExclusiveGateway_2" targetRef="processVacationRequestByManagerTask">
-      <conditionExpression xsi:type="tFormalExpression" id="FormalExpression_4" language="http://www.java.com/java">
+      <conditionExpression xsi:type="tFormalExpression" id="FormalExpression_4" >
                 ${resendVacationRequest}
             </conditionExpression>
     </sequenceFlow>
@@ -70,7 +70,7 @@
       <incoming>SequenceFlow_10</incoming>
     </endEvent>
     <sequenceFlow id="SequenceFlow_10" name="Employee Decided to Accept Manager's Decision" sourceRef="ExclusiveGateway_2" targetRef="EndEvent_2">
-      <conditionExpression xsi:type="tFormalExpression" id="FormalExpression_5" language="http://www.java.com/java">
+      <conditionExpression xsi:type="tFormalExpression" id="FormalExpression_5" >
                 ${!resendVacationRequest}
             </conditionExpression>
     </sequenceFlow>
