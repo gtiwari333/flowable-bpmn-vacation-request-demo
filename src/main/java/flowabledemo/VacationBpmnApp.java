@@ -12,13 +12,12 @@ import org.springframework.context.annotation.Configuration;
 @SpringBootApplication
 public class VacationBpmnApp {
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         SpringApplication.run(VacationBpmnApp.class, args);
     }
 
     @Configuration  //required for flowable rest + swagger
-    @ComponentScan({"org.flowable.rest.**", "flowabledemo"}) //required for flowable rest + swagger
-    @ComponentScan(basePackageClasses = BaseExceptionHandlerAdvice.class)
+    @ComponentScan({"org.flowable.rest.**" }) //required for flowable rest + swagger
     static class ProcessEngineRestConfiguration {
 
         @Bean

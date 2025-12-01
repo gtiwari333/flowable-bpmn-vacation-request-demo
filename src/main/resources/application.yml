@@ -4,7 +4,7 @@ spring:
     open-in-view: false
   h2:
     console:
-      enabled: true #Access from http://localhost:8080/h2-console/
+      enabled: true #Access from http://localhost:8080/h2-console/, look for log for connection URL and username
 #    datasource:
 #        url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:flowable_test}?useUnicode=true&allowPublicKeyRetrieval=true
 #        username: ${MYSQL_USERNAME:root}
