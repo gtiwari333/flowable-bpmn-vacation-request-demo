@@ -1,14 +1,14 @@
 package flowabledemo.config;
 
-import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.support.RestClientAdapter;
 import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
-@TestConfiguration
+@Configuration
 @Lazy // allows for initialization after the server port is known
 public class TestAppConfig {
     @LocalServerPort

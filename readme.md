@@ -1,5 +1,11 @@
 https://documentation.flowable.com/latest/develop/dbs/overview
 
+	at flowabledemo.config.VacationRuleRagConfiguration.vacationRuleVectorStore(VacationRuleRagConfiguration.java:42) ~[classes/:na]
+
+org.springframework.ai.retry.NonTransientAiException: HTTP 404 - {"error":"model \"mxbai-embed-large\" not found, try pulling it first"}
+
+ollama pull mxbai-embed-large
+
 ## BPMN:
 
 ![](vacation-request.png)

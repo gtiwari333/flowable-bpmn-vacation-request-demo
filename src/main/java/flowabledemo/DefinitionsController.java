@@ -75,7 +75,9 @@ public class DefinitionsController {
     @GetMapping(value = "/{processDefinitionKey}/{businessKey}/image", produces = MediaType.IMAGE_PNG_VALUE)
     @SneakyThrows
     public ResponseEntity<byte[]> getProcessImageAtCurrentState(@PathVariable String processDefinitionKey, @PathVariable String businessKey) {
-        //note - get business key from getAllProcessInstances() endpoint or `SELECT * FROM ACT_RU_EXECUTION`
+        //businessKey will be generated  after a bpmn process is started
+        //get business key from getAllProcessInstances() endpoint (id eg:     "businessKey": "vacation_request_1764552563467" )
+        //  or run `SELECT * FROM ACT_RU_EXECUTION`
         //processDefinitionKey + businessKey >> it defines a process that was started
 
         List<HistoricProcessInstance> historicProcessInstances = historyService.createHistoricProcessInstanceQuery()
