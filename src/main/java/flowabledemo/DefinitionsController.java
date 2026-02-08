@@ -1,5 +1,8 @@
 package flowabledemo;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
@@ -54,8 +57,9 @@ public class DefinitionsController {
                 .collect(Collectors.toList());
     }
 
+    @Operation(summary = "Get all process instances along with `businessKey`")
     @GetMapping(value = "/history/{processDefinitionKey}")
-    public List<ProcessInstanceResponse> getAllProcessInstancesStartedAfter(@PathVariable String processDefinitionKey,
+    public List<ProcessInstanceResponse> getAllProcessInstancesStartedAfter(@Parameter(description = "it will be vacationRequestProcess") @PathVariable String processDefinitionKey,
                                                                             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date startedAfter) {
         return runtimeService.createProcessInstanceQuery()
                 .processDefinitionKey(processDefinitionKey)
@@ -65,16 +69,14 @@ public class DefinitionsController {
                 .collect(Collectors.toList());
     }
 
-    @GetMapping(value = "/{processDefinitionId}/image", produces = MediaType.IMAGE_PNG_VALUE)
-    public ResponseEntity<byte[]> getProcessImage(@PathVariable String processDefinitionId) {
-        //TODO: copy code from getModelResource and write into HttpServletResponse
-        return processDefinitionImageResource.getModelResource(processDefinitionId);
-    }
-
-
     @GetMapping(value = "/{processDefinitionKey}/{businessKey}/image", produces = MediaType.IMAGE_PNG_VALUE)
     @SneakyThrows
-    public ResponseEntity<byte[]> getProcessImageAtCurrentState(@PathVariable String processDefinitionKey, @PathVariable String businessKey) {
+    public ResponseEntity<byte[]> getProcessImageAtCurrentState(@Parameter(description = "it will be vacationRequestProcess") @PathVariable String processDefinitionKey,
+                                                                @Parameter(description = "BusinessKey will be generated  after a bpmn process is started (a vacation request is requested). Note the response of POST /vacation/create-vacation-request " +
+                                                                        "Use `/history/{processDefinitionKey}` to get the businessKey",
+                                                                        example = "vacation_request_1764552563467",
+                                                                        required = true
+                                                                ) @PathVariable String businessKey) {
         //businessKey will be generated  after a bpmn process is started
         //get business key from getAllProcessInstances() endpoint (id eg:     "businessKey": "vacation_request_1764552563467" )
         //  or run `SELECT * FROM ACT_RU_EXECUTION`
@@ -114,8 +116,15 @@ public class DefinitionsController {
     }
 
     @GetMapping(value = "/processDefinitions")
-    public DataResponse<ProcessDefinitionResponse> getAllProcessDefinitions(@RequestParam(defaultValue = "0", required = false) int start,
-                                                                            @RequestParam(defaultValue = "10", required = false) int size) {
+    @Operation(
+            summary = "Get all process definitions",
+            description = "Retrieves a paginated list of all process definitions available in the repository. (currently there's only one - Vacation Request) " +
+                    "Process definitions represent the different BPMN processes that can be instantiated and executed."
+    )
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved the list of process definitions")
+    public DataResponse<ProcessDefinitionResponse> getAllProcessDefinitions(
+            @RequestParam(defaultValue = "0", required = false) int start,
+            @RequestParam(defaultValue = "10", required = false) int size) {
         ProcessDefinitionQuery processDefinitionQuery = repositoryService.createProcessDefinitionQuery();
 
         var allRequestParams = Map.of(
@@ -123,6 +132,18 @@ public class DefinitionsController {
                 "size", String.valueOf(size)
         );
         return paginateList(allRequestParams, processDefinitionQuery, "name", properties, restResponseFactory::createProcessDefinitionResponseList);
+    }
+
+
+    @GetMapping(value = "/{processDefinitionId}/image", produces = MediaType.IMAGE_PNG_VALUE)
+    public ResponseEntity<byte[]> getProcessImage(
+            @Parameter(
+                    description = "Process Definition ID",
+                    example = "vacationRequestProcess:1:a88c8fc5-052c-11f1-9d54-0e129cf9832b",
+                    required = true
+            ) @PathVariable String processDefinitionId) {
+        //TODO: copy code from getModelResource and write into HttpServletResponse
+        return processDefinitionImageResource.getModelResource(processDefinitionId);
     }
 
 
