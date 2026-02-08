@@ -1,228 +1,235 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-             xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
-             xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:activiti="http://activiti.org/bpmn"
-             xmlns:flowable="http://flowable.org/bpmn" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="Definitions_1"
-             targetNamespace="http://www.flowable.org/processdef" exporter="bpmn-js (https://demo.bpmn.io)"
-             exporterVersion="18.9.0">
-    <process id="vacationRequestProcess" name="Vacation Request Process" isExecutable="true">
-        <endEvent id="EndEvent_1" name="Done">
-            <incoming>SequenceFlow_5</incoming>
-        </endEvent>
-        <serviceTask id="processVacationRequestByAIManagerTask" name="Process Validation Request By AI Manager"
-                     flowable:delegateExpression="${vacationRequestAIProcessor}" activiti:async="true">
-            <documentation id="Documentation_32">${employeeName} would like to take ${numberOfDays} day(s) of vacation
-                (Purpose: ${vacationPurpose}).
-            </documentation>
-            <incoming>SequenceFlow_2</incoming>
-            <outgoing>SequenceFlow_3</outgoing>
-        </serviceTask>
-        <exclusiveGateway id="ExclusiveGateway_1" gatewayDirection="Diverging">
-            <incoming>SequenceFlow_3</incoming>
-            <outgoing>SequenceFlow_4</outgoing>
-            <outgoing>SequenceFlow_6</outgoing>
-            <outgoing>Flow_0kwexy8</outgoing>
-        </exclusiveGateway>
-        <sequenceFlow id="SequenceFlow_3" sourceRef="processVacationRequestByAIManagerTask"
-                      targetRef="ExclusiveGateway_1"/>
-        <serviceTask id="sendApprovalEmailTask" name="Send Confirmation Email"
-                     flowable:delegateExpression="${approvedEmailSender}" activiti:async="true">
-            <incoming>SequenceFlow_4</incoming>
-            <incoming>Flow_1qbb47y</incoming>
-            <outgoing>SequenceFlow_5</outgoing>
-        </serviceTask>
-        <sequenceFlow id="SequenceFlow_4" name="Approved By Agent" sourceRef="ExclusiveGateway_1"
-                      targetRef="sendApprovalEmailTask">
-            <conditionExpression xsi:type="tFormalExpression" id="FormalExpression_2">
-                ${agentApprovalStatus=='APPROVED'}
-            </conditionExpression>
-        </sequenceFlow>
-        <sequenceFlow id="SequenceFlow_5" sourceRef="sendApprovalEmailTask" targetRef="EndEvent_1"/>
-        <serviceTask id="sendRejectionEmailTask" name="Send Rejection Email"
-                     flowable:delegateExpression="${denialEmailSender}" activiti:async="true">
-            <incoming>SequenceFlow_6</incoming>
-            <incoming>Flow_0k2nbhp</incoming>
-            <outgoing>SequenceFlow_7</outgoing>
-        </serviceTask>
-        <sequenceFlow id="SequenceFlow_6" name="Rejected by Agent" sourceRef="ExclusiveGateway_1"
-                      targetRef="sendRejectionEmailTask">
-            <conditionExpression xsi:type="tFormalExpression" id="FormalExpression_3">
-                ${agentApprovalStatus=='REJECTED'}
-            </conditionExpression>
-        </sequenceFlow>
-        <userTask id="requesterReviewTask" name="Requester reviews the vacation request">
-            <documentation id="Documentation_33">Your manager has disapproved your vacation request for
-                ${numberOfDays} days. Reason: ${denialReason}
-            </documentation>
-            <incoming>SequenceFlow_7</incoming>
-            <outgoing>SequenceFlow_8</outgoing>
-            <potentialOwner id="ownerEmployee">
-                <resourceAssignmentExpression id="ResourceAssignmentExpression_2">
-                    <formalExpression>EMPLOYEE</formalExpression>
-                </resourceAssignmentExpression>
-            </potentialOwner>
-        </userTask>
-        <sequenceFlow id="SequenceFlow_7" sourceRef="sendRejectionEmailTask" targetRef="requesterReviewTask"/>
-        <exclusiveGateway id="ExclusiveGateway_2" gatewayDirection="Diverging">
-            <incoming>SequenceFlow_8</incoming>
-            <outgoing>SequenceFlow_10</outgoing>
-            <outgoing>Flow_1ohfbeq</outgoing>
-        </exclusiveGateway>
-        <sequenceFlow id="SequenceFlow_8" sourceRef="requesterReviewTask" targetRef="ExclusiveGateway_2"/>
-        <endEvent id="EndEvent_2" name="Done">
-            <incoming>SequenceFlow_10</incoming>
-        </endEvent>
-        <sequenceFlow id="SequenceFlow_10" name="Employee Accepted Rejection" sourceRef="ExclusiveGateway_2"
-                      targetRef="EndEvent_2">
-            <conditionExpression xsi:type="tFormalExpression" id="FormalExpression_5">${!resendVacationRequest}
-            </conditionExpression>
-        </sequenceFlow>
-        <startEvent id="StartEvent_1" name="Employee Requests Vacation">
-            <outgoing>SequenceFlow_2</outgoing>
-            <outputSet id="OutputSet_1" name="Output Set 1"/>
-        </startEvent>
-        <sequenceFlow id="SequenceFlow_2" sourceRef="StartEvent_1" targetRef="processVacationRequestByAIManagerTask"/>
-        <userTask id="reviewVacationRequestByHumanManager" name="Review Vacation Request by Human Manager">
-            <incoming>Flow_1ohfbeq</incoming>
-            <incoming>Flow_0kwexy8</incoming>
-            <outgoing>Flow_1s1ysmq</outgoing>
-            <potentialOwner id="ownerManager">
-                <resourceAssignmentExpression id="ResourceAssignmentExpression_1">
-                    <formalExpression>MANAGER</formalExpression>
-                </resourceAssignmentExpression>
-            </potentialOwner>
-        </userTask>
-        <sequenceFlow id="Flow_1ohfbeq" name="Employee Decided to Appeal AI Manager's Decision"
-                      sourceRef="ExclusiveGateway_2" targetRef="reviewVacationRequestByHumanManager"/>
-        <sequenceFlow id="Flow_0kwexy8" name="Undecided By Agent" sourceRef="ExclusiveGateway_1"
-                      targetRef="reviewVacationRequestByHumanManager">
-            <conditionExpression>${agentApprovalStatus=='REJECTED'}</conditionExpression>
-        </sequenceFlow>
-        <exclusiveGateway id="Gateway_0x2e99x">
-            <incoming>Flow_1s1ysmq</incoming>
-            <outgoing>Flow_1qbb47y</outgoing>
-            <outgoing>Flow_0k2nbhp</outgoing>
-        </exclusiveGateway>
-        <sequenceFlow id="Flow_1s1ysmq" name="Reviewed By Human Manager" sourceRef="reviewVacationRequestByHumanManager"
-                      targetRef="Gateway_0x2e99x"/>
-        <sequenceFlow id="Flow_1qbb47y" name="Approved" sourceRef="Gateway_0x2e99x" targetRef="sendApprovalEmailTask"/>
-        <sequenceFlow id="Flow_0k2nbhp" name="Rejected" sourceRef="Gateway_0x2e99x" targetRef="sendRejectionEmailTask"/>
-    </process>
-    <bpmndi:BPMNDiagram id="BPMNDiagram_1" name="Default Process Diagram">
-        <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="vacationRequestProcess">
-            <bpmndi:BPMNShape id="BPMNShape_2" bpmnElement="EndEvent_1">
-                <dc:Bounds x="640" y="79" width="36" height="36"/>
-                <bpmndi:BPMNLabel id="BPMNLabel_2" labelStyle="BPMNLabelStyle_1">
-                    <dc:Bounds x="644" y="90" width="27" height="14"/>
-                </bpmndi:BPMNLabel>
-            </bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="BPMNShape_processVacationRequestByAIManagerTask"
-                              bpmnElement="processVacationRequestByAIManagerTask" isExpanded="true">
-                <dc:Bounds x="255" y="222.49998" width="146" height="75.000015"/>
-            </bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="BPMNShape_ExclusiveGateway_1" bpmnElement="ExclusiveGateway_1" isMarkerVisible="true">
-                <dc:Bounds x="445" y="235" width="50" height="50"/>
-            </bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="BPMNShape_sendApprovalEmailTask" bpmnElement="sendApprovalEmailTask"
-                              isExpanded="true">
-                <dc:Bounds x="383" y="62" width="179" height="70"/>
-            </bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="BPMNShape_sendRejectionEmailTask" bpmnElement="sendRejectionEmailTask"
-                              isExpanded="true">
-                <dc:Bounds x="680" y="227.49998" width="140" height="70"/>
-            </bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="BPMNShape_requesterReviewTask" bpmnElement="requesterReviewTask" isExpanded="true">
-                <dc:Bounds x="913" y="217.5" width="135" height="90"/>
-            </bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="BPMNShape_ExclusiveGateway_2" bpmnElement="ExclusiveGateway_2" isMarkerVisible="true">
-                <dc:Bounds x="955.5" y="427.5" width="50" height="50"/>
-            </bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="BPMNShape_EndEvent_1" bpmnElement="EndEvent_2">
-                <dc:Bounds x="1182" y="434.5" width="36" height="36"/>
-            </bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
-                <dc:Bounds x="160" y="111" width="36" height="36"/>
-            </bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="reviewVacationRequestByHumanManager_di"
-                              bpmnElement="reviewVacationRequestByHumanManager">
-                <dc:Bounds x="370" y="415" width="200" height="75"/>
-                <bpmndi:BPMNLabel/>
-            </bpmndi:BPMNShape>
-            <bpmndi:BPMNShape id="Gateway_0x2e99x_di" bpmnElement="Gateway_0x2e99x" isMarkerVisible="true">
-                <dc:Bounds x="595" y="325" width="50" height="50"/>
-            </bpmndi:BPMNShape>
-            <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_3" bpmnElement="SequenceFlow_3"
-                             sourceElement="BPMNShape_processVacationRequestByAIManagerTask"
-                             targetElement="BPMNShape_ExclusiveGateway_1">
-                <di:waypoint x="401" y="260"/>
-                <di:waypoint x="445" y="260"/>
-            </bpmndi:BPMNEdge>
-            <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_4" bpmnElement="SequenceFlow_4"
-                             sourceElement="BPMNShape_ExclusiveGateway_1"
-                             targetElement="BPMNShape_sendApprovalEmailTask">
-                <di:waypoint x="470" y="235"/>
-                <di:waypoint x="472.5" y="132"/>
-            </bpmndi:BPMNEdge>
-            <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_5" bpmnElement="SequenceFlow_5"
-                             sourceElement="BPMNShape_sendApprovalEmailTask" targetElement="BPMNShape_2">
-                <di:waypoint x="562" y="97"/>
-                <di:waypoint x="640" y="97"/>
-            </bpmndi:BPMNEdge>
-            <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_6" bpmnElement="SequenceFlow_6"
-                             sourceElement="BPMNShape_ExclusiveGateway_1"
-                             targetElement="BPMNShape_sendRejectionEmailTask">
-                <di:waypoint x="495" y="260"/>
-                <di:waypoint x="680" y="262.5"/>
-            </bpmndi:BPMNEdge>
-            <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_7" bpmnElement="SequenceFlow_7"
-                             sourceElement="BPMNShape_sendRejectionEmailTask"
-                             targetElement="BPMNShape_requesterReviewTask">
-                <di:waypoint x="820" y="262.5"/>
-                <di:waypoint x="913" y="262.5"/>
-            </bpmndi:BPMNEdge>
-            <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_8" bpmnElement="SequenceFlow_8"
-                             sourceElement="BPMNShape_requesterReviewTask" targetElement="BPMNShape_ExclusiveGateway_2">
-                <di:waypoint x="980.0345" y="307.5"/>
-                <di:waypoint x="981.5" y="428.5"/>
-            </bpmndi:BPMNEdge>
-            <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_10" bpmnElement="SequenceFlow_10"
-                             sourceElement="BPMNShape_ExclusiveGateway_2" targetElement="BPMNShape_EndEvent_1">
-                <di:waypoint x="1005.5" y="452.5"/>
-                <di:waypoint x="1182" y="452.5"/>
-            </bpmndi:BPMNEdge>
-            <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_2" bpmnElement="SequenceFlow_2"
-                             sourceElement="BPMNShape_StartEvent_2"
-                             targetElement="BPMNShape_processVacationRequestByAIManagerTask">
-                <di:waypoint x="178" y="147"/>
-                <di:waypoint x="178" y="260"/>
-                <di:waypoint x="255" y="260"/>
-            </bpmndi:BPMNEdge>
-            <bpmndi:BPMNEdge id="Flow_1ohfbeq_di" bpmnElement="Flow_1ohfbeq">
-                <di:waypoint x="956" y="453"/>
-                <di:waypoint x="570" y="453"/>
-            </bpmndi:BPMNEdge>
-            <bpmndi:BPMNEdge id="Flow_0kwexy8_di" bpmnElement="Flow_0kwexy8">
-                <di:waypoint x="470" y="285"/>
-                <di:waypoint x="470" y="415"/>
-            </bpmndi:BPMNEdge>
-            <bpmndi:BPMNEdge id="Flow_1s1ysmq_di" bpmnElement="Flow_1s1ysmq">
-                <di:waypoint x="470" y="415"/>
-                <di:waypoint x="470" y="350"/>
-                <di:waypoint x="595" y="350"/>
-            </bpmndi:BPMNEdge>
-            <bpmndi:BPMNEdge id="Flow_1qbb47y_di" bpmnElement="Flow_1qbb47y">
-                <di:waypoint x="620" y="325"/>
-                <di:waypoint x="620" y="122"/>
-                <di:waypoint x="562" y="122"/>
-            </bpmndi:BPMNEdge>
-            <bpmndi:BPMNEdge id="Flow_0k2nbhp_di" bpmnElement="Flow_0k2nbhp">
-                <di:waypoint x="645" y="350"/>
-                <di:waypoint x="750" y="350"/>
-                <di:waypoint x="750" y="297"/>
-            </bpmndi:BPMNEdge>
-        </bpmndi:BPMNPlane>
-        <bpmndi:BPMNLabelStyle id="BPMNLabelStyle_1">
-            <dc:Font name="arial" size="9"/>
-        </bpmndi:BPMNLabelStyle>
-    </bpmndi:BPMNDiagram>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:activiti="http://activiti.org/bpmn" xmlns:flowable="http://flowable.org/bpmn" xmlns:xsd="http://www.w3.org/2001/XMLSchema" id="Definitions_1" targetNamespace="http://www.flowable.org/processdef" exporter="bpmn-js (https://demo.bpmn.io)" exporterVersion="18.10.1">
+  <process id="vacationRequestProcess" name="Vacation Request Process" isExecutable="true">
+    <endEvent id="EndEvent_1" name="Done">
+      <incoming>SequenceFlow_5</incoming>
+    </endEvent>
+    <serviceTask id="processVacationRequestByAIManagerTask" name="Process Validation Request By AI Manager" flowable:delegateExpression="${vacationRequestAIProcessor}" activiti:async="true">
+      <documentation id="Documentation_32">${employeeName} would like to take ${numberOfDays} day(s) of vacation
+        (Purpose: ${vacationPurpose}).
+      </documentation>
+      <incoming>SequenceFlow_2</incoming>
+      <outgoing>SequenceFlow_3</outgoing>
+    </serviceTask>
+    <exclusiveGateway id="ExclusiveGateway_1" name="AI Agent reviews the request" gatewayDirection="Diverging">
+      <incoming>SequenceFlow_3</incoming>
+      <outgoing>SequenceFlow_4</outgoing>
+      <outgoing>SequenceFlow_6</outgoing>
+      <outgoing>Flow_0kwexy8</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="SequenceFlow_3" sourceRef="processVacationRequestByAIManagerTask" targetRef="ExclusiveGateway_1" />
+    <serviceTask id="sendApprovalEmailTask" name="Send Confirmation Email" flowable:delegateExpression="${approvedEmailSender}" activiti:async="true">
+      <incoming>SequenceFlow_4</incoming>
+      <incoming>Flow_1qbb47y</incoming>
+      <outgoing>SequenceFlow_5</outgoing>
+    </serviceTask>
+    <sequenceFlow id="SequenceFlow_4" name="Approved By Agent" sourceRef="ExclusiveGateway_1" targetRef="sendApprovalEmailTask">
+      <conditionExpression xsi:type="tFormalExpression" id="FormalExpression_2">
+        ${agentApprovalStatus=='APPROVED'}
+      </conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="SequenceFlow_5" sourceRef="sendApprovalEmailTask" targetRef="EndEvent_1" />
+    <serviceTask id="sendRejectionEmailTask" name="Send Rejection Email" flowable:delegateExpression="${denialEmailSender}" activiti:async="true">
+      <incoming>SequenceFlow_6</incoming>
+      <incoming>Flow_0k2nbhp</incoming>
+      <outgoing>SequenceFlow_7</outgoing>
+    </serviceTask>
+    <sequenceFlow id="SequenceFlow_6" name="Rejected by Agent" sourceRef="ExclusiveGateway_1" targetRef="sendRejectionEmailTask">
+      <conditionExpression xsi:type="tFormalExpression" id="FormalExpression_3">
+        ${agentApprovalStatus=='REJECTED'}
+      </conditionExpression>
+    </sequenceFlow>
+    <userTask id="requesterReviewTask" name="Employee(requester) reviews the vacation request">
+      <documentation id="Documentation_33">Your manager has disapproved your vacation request for
+        ${numberOfDays} days. Reason: ${denialReason}
+      </documentation>
+      <incoming>SequenceFlow_7</incoming>
+      <outgoing>SequenceFlow_8</outgoing>
+      <potentialOwner id="ownerEmployee">
+        <resourceAssignmentExpression id="ResourceAssignmentExpression_2">
+          <expression xsi:type="tFormalExpression">EMPLOYEE</expression>
+        </resourceAssignmentExpression>
+      </potentialOwner>
+    </userTask>
+    <sequenceFlow id="SequenceFlow_7" sourceRef="sendRejectionEmailTask" targetRef="requesterReviewTask" />
+    <exclusiveGateway id="ExclusiveGateway_2" name="Requester decides if they want to accept the rejection or appeal" gatewayDirection="Diverging">
+      <incoming>SequenceFlow_8</incoming>
+      <outgoing>SequenceFlow_10</outgoing>
+      <outgoing>Flow_1ohfbeq</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="SequenceFlow_8" sourceRef="requesterReviewTask" targetRef="ExclusiveGateway_2" />
+    <endEvent id="EndEvent_2" name="Done">
+      <incoming>SequenceFlow_10</incoming>
+    </endEvent>
+    <sequenceFlow id="SequenceFlow_10" name="Employee Accepted Rejection" sourceRef="ExclusiveGateway_2" targetRef="EndEvent_2">
+      <conditionExpression xsi:type="tFormalExpression" id="FormalExpression_5">${!resendVacationRequest}
+      </conditionExpression>
+    </sequenceFlow>
+    <startEvent id="StartEvent_1" name="Employee Requests Vacation">
+      <outgoing>SequenceFlow_2</outgoing>
+      <outputSet id="OutputSet_1" name="Output Set 1" />
+    </startEvent>
+    <sequenceFlow id="SequenceFlow_2" sourceRef="StartEvent_1" targetRef="processVacationRequestByAIManagerTask" />
+    <userTask id="reviewVacationRequestByHumanManager" name="Review Vacation Request by Human Manager">
+      <incoming>Flow_1ohfbeq</incoming>
+      <incoming>Flow_0kwexy8</incoming>
+      <outgoing>Flow_1s1ysmq</outgoing>
+      <potentialOwner id="ownerManager">
+        <resourceAssignmentExpression id="ResourceAssignmentExpression_1">
+          <expression xsi:type="tFormalExpression">MANAGER</expression>
+        </resourceAssignmentExpression>
+      </potentialOwner>
+    </userTask>
+    <sequenceFlow id="Flow_1ohfbeq" name="Employee (requester) Decided to Appeal AI Agent&#39;s Decision" sourceRef="ExclusiveGateway_2" targetRef="reviewVacationRequestByHumanManager" />
+    <sequenceFlow id="Flow_0kwexy8" name="Undecided By Agent" sourceRef="ExclusiveGateway_1" targetRef="reviewVacationRequestByHumanManager">
+      <conditionExpression>${agentApprovalStatus=='REJECTED'}</conditionExpression>
+    </sequenceFlow>
+    <exclusiveGateway id="Gateway_0x2e99x" name="Manager reviews(Undecided request by AI Agent or Employee&#39;s Appeal)">
+      <incoming>Flow_1s1ysmq</incoming>
+      <outgoing>Flow_1qbb47y</outgoing>
+      <outgoing>Flow_0k2nbhp</outgoing>
+    </exclusiveGateway>
+    <sequenceFlow id="Flow_1s1ysmq" name="Reviewed By Human Manager" sourceRef="reviewVacationRequestByHumanManager" targetRef="Gateway_0x2e99x" />
+    <sequenceFlow id="Flow_1qbb47y" name="Approved by Manager" sourceRef="Gateway_0x2e99x" targetRef="sendApprovalEmailTask" />
+    <sequenceFlow id="Flow_0k2nbhp" name="Rejected By Manager" sourceRef="Gateway_0x2e99x" targetRef="sendRejectionEmailTask" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1" name="Default Process Diagram">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="vacationRequestProcess">
+      <bpmndi:BPMNShape id="BPMNShape_2" bpmnElement="EndEvent_1">
+        <dc:Bounds x="640" y="79" width="36" height="36" />
+        <bpmndi:BPMNLabel id="BPMNLabel_2" labelStyle="BPMNLabelStyle_1">
+          <dc:Bounds x="644" y="90" width="27" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_processVacationRequestByAIManagerTask" bpmnElement="processVacationRequestByAIManagerTask" isExpanded="true">
+        <dc:Bounds x="255" y="222" width="146" height="75" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_ExclusiveGateway_1" bpmnElement="ExclusiveGateway_1" isMarkerVisible="true">
+        <dc:Bounds x="445" y="235" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="430" y="286" width="86" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_sendApprovalEmailTask" bpmnElement="sendApprovalEmailTask" isExpanded="true">
+        <dc:Bounds x="383" y="62" width="179" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_sendRejectionEmailTask" bpmnElement="sendRejectionEmailTask" isExpanded="true">
+        <dc:Bounds x="680" y="227.49998" width="140" height="70" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_requesterReviewTask" bpmnElement="requesterReviewTask" isExpanded="true">
+        <dc:Bounds x="913" y="217.5" width="135" height="90" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_ExclusiveGateway_2" bpmnElement="ExclusiveGateway_2" isMarkerVisible="true">
+        <dc:Bounds x="955.5" y="427.5" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="936" y="485" width="90" height="66" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_EndEvent_1" bpmnElement="EndEvent_2">
+        <dc:Bounds x="1182" y="434.5" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1186" y="446" width="27" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="160" y="111" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="184" y="160" width="52" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="reviewVacationRequestByHumanManager_di" bpmnElement="reviewVacationRequestByHumanManager">
+        <dc:Bounds x="370" y="415" width="200" height="75" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0x2e99x_di" bpmnElement="Gateway_0x2e99x" isMarkerVisible="true">
+        <dc:Bounds x="595" y="325" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="628" y="350" width="84" height="80" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_3" bpmnElement="SequenceFlow_3" sourceElement="BPMNShape_processVacationRequestByAIManagerTask" targetElement="BPMNShape_ExclusiveGateway_1">
+        <di:waypoint x="401" y="260" />
+        <di:waypoint x="445" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_4" bpmnElement="SequenceFlow_4" sourceElement="BPMNShape_ExclusiveGateway_1" targetElement="BPMNShape_sendApprovalEmailTask">
+        <di:waypoint x="470" y="235" />
+        <di:waypoint x="472.5" y="132" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="406" y="159" width="67" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_5" bpmnElement="SequenceFlow_5" sourceElement="BPMNShape_sendApprovalEmailTask" targetElement="BPMNShape_2">
+        <di:waypoint x="562" y="97" />
+        <di:waypoint x="640" y="97" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_6" bpmnElement="SequenceFlow_6" sourceElement="BPMNShape_ExclusiveGateway_1" targetElement="BPMNShape_sendRejectionEmailTask">
+        <di:waypoint x="495" y="260" />
+        <di:waypoint x="680" y="262.5" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="515" y="236" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_7" bpmnElement="SequenceFlow_7" sourceElement="BPMNShape_sendRejectionEmailTask" targetElement="BPMNShape_requesterReviewTask">
+        <di:waypoint x="820" y="262.5" />
+        <di:waypoint x="913" y="262.5" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_8" bpmnElement="SequenceFlow_8" sourceElement="BPMNShape_requesterReviewTask" targetElement="BPMNShape_ExclusiveGateway_2">
+        <di:waypoint x="980.0345" y="307.5" />
+        <di:waypoint x="981.5" y="428.5" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_10" bpmnElement="SequenceFlow_10" sourceElement="BPMNShape_ExclusiveGateway_2" targetElement="BPMNShape_EndEvent_1">
+        <di:waypoint x="1005.5" y="452.5" />
+        <di:waypoint x="1182" y="452.5" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1074" y="406" width="52" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="BPMNEdge_SequenceFlow_2" bpmnElement="SequenceFlow_2" sourceElement="BPMNShape_StartEvent_2" targetElement="BPMNShape_processVacationRequestByAIManagerTask">
+        <di:waypoint x="178" y="147" />
+        <di:waypoint x="178" y="260" />
+        <di:waypoint x="255" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ohfbeq_di" bpmnElement="Flow_1ohfbeq">
+        <di:waypoint x="956" y="453" />
+        <di:waypoint x="570" y="453" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="755" y="457" width="90" height="66" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0kwexy8_di" bpmnElement="Flow_0kwexy8">
+        <di:waypoint x="470" y="285" />
+        <di:waypoint x="470" y="415" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="399" y="346" width="72" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1s1ysmq_di" bpmnElement="Flow_1s1ysmq">
+        <di:waypoint x="527" y="415" />
+        <di:waypoint x="605" y="360" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="499" y="366" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1qbb47y_di" bpmnElement="Flow_1qbb47y">
+        <di:waypoint x="620" y="325" />
+        <di:waypoint x="620" y="122" />
+        <di:waypoint x="562" y="122" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="558" y="159" width="65" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0k2nbhp_di" bpmnElement="Flow_0k2nbhp">
+        <di:waypoint x="645" y="350" />
+        <di:waypoint x="750" y="350" />
+        <di:waypoint x="750" y="297" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="752" y="316" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+    <bpmndi:BPMNLabelStyle id="BPMNLabelStyle_1">
+      <dc:Font name="arial" size="9" />
+    </bpmndi:BPMNLabelStyle>
+  </bpmndi:BPMNDiagram>
 </definitions>
