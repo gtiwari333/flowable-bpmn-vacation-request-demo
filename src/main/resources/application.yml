@@ -25,11 +25,20 @@ springdoc:
     try-it-out-enabled: true
   writer-with-order-by-keys: true
   paths-to-match:
-    #    - /runtime/tasks/**
-    #    - /runtime/process-instances/**
-    #    - /management/**
-    #    - /history/**
+    # these are from flowable rest library
+#    - /runtime/tasks/**
+#    - /runtime/process-instances/**
+#    - /management/**
+#    - /history/**
+    # these are from this app
     - /api/**
 
 
 #debug: true
+flowable:
+  dmn:
+    deploy-resources: false
+  app:
+    deploy-resources: false
+  cmmn:
+    deploy-resources: false

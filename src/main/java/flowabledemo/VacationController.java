@@ -6,6 +6,7 @@ import flowabledemo.vacation.VacationApprovalService;
 import flowabledemo.vacation.VacationRequestStarter;
 import lombok.RequiredArgsConstructor;
 import org.flowable.engine.TaskService;
+import org.flowable.engine.runtime.ProcessInstance;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,8 +25,8 @@ class VacationController {
     private final VacationRequestStarter vacationRequestStarter;
 
     @PostMapping(value = "/create-vacation-request")
-    public void startProcessInstance(@RequestBody VacationRequestInput req) {
-        vacationRequestStarter.saveNewVacationRequest(req);
+    public ProcessDto startProcessInstance(@RequestBody VacationRequestInput req) {
+        return vacationRequestStarter.saveNewVacationRequest(req);
     }
 
     @GetMapping(value = "/fetch/{group}")
