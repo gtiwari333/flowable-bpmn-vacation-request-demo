@@ -1,9 +1,6 @@
 package flowabledemo.config;
 
-import flowabledemo.dto.TaskRepresentation;
-import flowabledemo.dto.VacationProcessResult;
-import flowabledemo.dto.VacationRequestInput;
-import flowabledemo.dto.VacationUpdateRequest;
+import flowabledemo.dto.*;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.service.annotation.GetExchange;
@@ -21,7 +18,7 @@ public interface VacationApi {
     void startProcessInstance(@RequestBody VacationRequestInput req);
 
     @GetExchange(value = "/fetch/{group}")
-    List<TaskRepresentation> fetchAvailableTasks(@PathVariable String group);
+    List<TaskRepresentation> fetchAvailableTasks(@PathVariable UserGroup group);
 
     @PostExchange(value = "/claim/{taskId}/{username}")
     Map<String, Object> claimTask(@PathVariable String taskId, @PathVariable String username);

@@ -1,11 +1,8 @@
 package flowabledemo;
 
-import flowabledemo.dto.TaskRepresentation;
-import flowabledemo.dto.VacationProcessResult;
-import flowabledemo.dto.VacationRequestInput;
-import flowabledemo.dto.VacationUpdateRequest;
+import flowabledemo.dto.*;
 import flowabledemo.vacation.VacationAppealProcessor;
-import flowabledemo.vacation.VacationRequestProcessor;
+import flowabledemo.vacation.VacationApprovalService;
 import flowabledemo.vacation.VacationRequestStarter;
 import lombok.RequiredArgsConstructor;
 import org.flowable.engine.TaskService;
@@ -23,7 +20,7 @@ import static java.util.stream.Collectors.toList;
 class VacationController {
     private final TaskService taskService;
     private final VacationAppealProcessor appealProcessor;
-    private final VacationRequestProcessor vacationRequestProcessor;
+    private final VacationApprovalService vacationApprovalService;
     private final VacationRequestStarter vacationRequestStarter;
 
     @PostMapping(value = "/create-vacation-request")
@@ -32,9 +29,9 @@ class VacationController {
     }
 
     @GetMapping(value = "/fetch/{group}")
-    public List<TaskRepresentation> fetchAvailableTasks(@PathVariable String group) {
+    public List<TaskRepresentation> fetchAvailableTasks(@PathVariable UserGroup group) {
         return taskService.createTaskQuery()
-                .taskCandidateGroup(group)
+                .taskCandidateGroup(group.name())
                 .taskUnassigned()
                 .list().stream()
                 .map(TaskRepresentation::new)
@@ -54,7 +51,7 @@ class VacationController {
 
     @PostMapping(value = "/review-vacation-request/{taskId}")
     public void reviewVacationRequest(@RequestBody VacationProcessResult decision, @PathVariable String taskId) {
-        vacationRequestProcessor.execute(decision, taskId);
+        vacationApprovalService.handleManagersApproval(decision, taskId);
     }
 
     @GetMapping(value = "/tasks", produces = MediaType.APPLICATION_JSON_VALUE)

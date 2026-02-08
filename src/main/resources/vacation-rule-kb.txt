@@ -1,0 +1,9 @@
+If numberOfDays is less than or equal to 2, approve the request.
+
+When the request is for more than 2 days, review the vacationPurpose and use following rule:
+- child care (upto 5 days) -> approve
+- short vacation/errand(1-3 days) -> approve
+- long vacation (> 5 days) -> reject
+- reject all request with numberOfDays > 5 days
+
+
