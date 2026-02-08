@@ -2,6 +2,7 @@ package flowabledemo.vacation;
 
 import flowabledemo.config.DefinitionsApi;
 import flowabledemo.config.VacationApi;
+import flowabledemo.dto.UserGroup;
 import flowabledemo.dto.VacationProcessResult;
 import flowabledemo.dto.VacationRequestInput;
 import flowabledemo.dto.VacationUpdateRequest;
@@ -63,10 +64,10 @@ class VacationRequestProcessE2ETest extends FlowableTestBase {
 
         String processInstanceId = vacationRequest.getId();
 
-        assertThat(getActivityIds(processInstanceId)).contains("StartEvent_1", "processVacationRequestByManagerTask");
+        assertThat(getActivityIds(processInstanceId)).contains("StartEvent_1", "SequenceFlow_2");
 
         //fetch manager tasks
-        var managerTasks = vacationApi.fetchAvailableTasks("MANAGER");
+        var managerTasks = vacationApi.fetchAvailableTasks(UserGroup.MANAGER);
 
         //claim task
         vacationApi.claimTask(managerTasks.getFirst().getId(), "Bob The Manager");
@@ -122,10 +123,10 @@ class VacationRequestProcessE2ETest extends FlowableTestBase {
 
         String processInstanceId = vacationRequest.getId();
 
-        assertThat(getActivityIds(processInstanceId)).contains("StartEvent_1", "processVacationRequestByManagerTask");
+        assertThat(getActivityIds(processInstanceId)).contains("StartEvent_1", "SequenceFlow_2");
 
         //fetch manager tasks
-        var managerTasks = vacationApi.fetchAvailableTasks("MANAGER");
+        var managerTasks = vacationApi.fetchAvailableTasks(UserGroup.MANAGER);
         vacationApi.claimTask(managerTasks.getFirst().getId(), "Bob The Manager");
 
         //review and approve request
@@ -140,7 +141,7 @@ class VacationRequestProcessE2ETest extends FlowableTestBase {
 
 
         //claim task by employee
-        var employeeTasks = vacationApi.fetchAvailableTasks("EMPLOYEE");
+        var employeeTasks = vacationApi.fetchAvailableTasks(UserGroup.EMPLOYEE);
         vacationApi.claimTask(employeeTasks.getFirst().getId(), "Sally The Employee");
         //appeal
         vacationApi.updateVacationRequest(VacationUpdateRequest.builder()
@@ -150,7 +151,7 @@ class VacationRequestProcessE2ETest extends FlowableTestBase {
         System.out.println(getActivityIds(processInstanceId));
 
         //claim task by manager
-        managerTasks = vacationApi.fetchAvailableTasks("MANAGER");
+        managerTasks = vacationApi.fetchAvailableTasks(UserGroup.MANAGER);
         vacationApi.claimTask(managerTasks.getFirst().getId(), "Bob The Manager");
 
         //review and approve request

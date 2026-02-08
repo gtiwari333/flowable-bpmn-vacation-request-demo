@@ -8,6 +8,6 @@ import lombok.Setter;
 @Setter
 @Builder
 public class VacationProcessResult {
-    boolean  vacationApproved;
+    boolean vacationApproved;
     String denialReason;
 }

@@ -8,17 +8,16 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-@Component("vacationRequestProcessor")
+@Component
 @Slf4j
 @RequiredArgsConstructor
-public class VacationRequestProcessor {
+public class VacationApprovalService {
 
     private final TaskService taskService;
 
-
-    public void execute(VacationProcessResult decision, String taskId) {
+    public void handleManagersApproval(VacationProcessResult decision, String taskId) {
         Map<String, Object> taskVariables = taskService.getVariables(taskId);
-        log.info("Task Variables {} ",taskVariables);
+        log.info("Task Variables {} ", taskVariables);
 
         if (decision.isVacationApproved()) {
             log.info("Manage decided to approve vacation request for {}", taskVariables.get("employeeName"));
@@ -33,6 +32,7 @@ public class VacationRequestProcessor {
             taskVariables.put("denialReason", decision.getDenialReason());
         }
 
+        // user task should be completed using taskService.complete
         taskService.complete(taskId, taskVariables);
     }
 

@@ -9,7 +9,11 @@ spring:
 #        url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:flowable_test}?useUnicode=true&allowPublicKeyRetrieval=true
 #        username: ${MYSQL_USERNAME:root}
 #        password: ${MYSQL_PASSWORD:password}
-
+  # using local LLM with ollama
+  ai:
+    ollama:
+      chat:
+        model: MFDoom/deepseek-v2-tool-calling
 server:
   port: 8081
 
