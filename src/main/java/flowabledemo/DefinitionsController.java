@@ -12,15 +12,14 @@ import org.flowable.bpmn.BpmnAutoLayout;
 import org.flowable.bpmn.model.BpmnModel;
 import org.flowable.common.engine.api.query.QueryProperty;
 import org.flowable.common.rest.api.DataResponse;
-import org.flowable.engine.*;
+import org.flowable.engine.HistoryService;
+import org.flowable.engine.RepositoryService;
 import org.flowable.engine.history.HistoricActivityInstance;
 import org.flowable.engine.history.HistoricProcessInstance;
 import org.flowable.engine.repository.ProcessDefinition;
 import org.flowable.engine.repository.ProcessDefinitionQuery;
-import org.flowable.engine.runtime.ProcessInstance;
 import org.flowable.image.ProcessDiagramGenerator;
 import org.flowable.image.impl.DefaultProcessDiagramGenerator;
-import org.flowable.job.api.Job;
 import org.flowable.rest.service.api.RestResponseFactory;
 import org.flowable.rest.service.api.repository.ProcessDefinitionImageResource;
 import org.flowable.rest.service.api.repository.ProcessDefinitionResponse;
@@ -44,13 +43,12 @@ import static org.flowable.engine.impl.ProcessDefinitionQueryProperty.*;
 @RequestMapping("/api/process")
 @Tag(name = "Process Management", description = "APIs for BPMN process monitoring, execution, and management")
 public class DefinitionsController {
-    
-    private final RuntimeService runtimeService;
+
+    private final ProcessManagementService processManagementService;
     private final RepositoryService repositoryService;
     private final ProcessDefinitionImageResource processDefinitionImageResource;
     private final RestResponseFactory restResponseFactory;
     private final HistoryService historyService;
-    private final ManagementService managementService;
 
     // ==================== EXISTING ENDPOINTS ====================
 
@@ -68,12 +66,7 @@ public class DefinitionsController {
     public List<ProcessInstanceResponse> getAllProcessInstancesStartedAfter(
             @Parameter(description = "it will be vacationRequestProcess") @PathVariable String processDefinitionKey,
             @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") Date startedAfter) {
-        return runtimeService.createProcessInstanceQuery()
-                .processDefinitionKey(processDefinitionKey)
-                .startedAfter(startedAfter)
-                .list().stream()
-                .map(restResponseFactory::createProcessInstanceResponse)
-                .collect(Collectors.toList());
+        return processManagementService.getRunningProcessesByDefinition(processDefinitionKey, 0, 1000);
     }
 
     @GetMapping(value = "/{processDefinitionKey}/{businessKey}/image", produces = MediaType.IMAGE_PNG_VALUE)
@@ -146,28 +139,22 @@ public class DefinitionsController {
         return processDefinitionImageResource.getModelResource(processDefinitionId);
     }
 
-    // ==================== NEW ENDPOINTS ====================
+    // ==================== REFACTORED ENDPOINTS ====================
 
-    // ==================== 1. GET ALL RUNNING PROCESSES ====================
     @GetMapping("/running")
     @Operation(
             summary = "Get all running process instances",
             description = "Retrieves a paginated list of all currently running process instances across all definitions"
     )
     @ApiResponse(responseCode = "200", description = "Successfully retrieved running processes")
-    public DataResponse<ProcessInstanceResponse> getAllRunningProcesses(
+    public ResponseEntity<List<ProcessInstanceResponse>> getAllRunningProcesses(
             @RequestParam(defaultValue = "0", required = false) int start,
             @RequestParam(defaultValue = "10", required = false) int size) {
-        
-        var allRequestParams = Map.of(
-                "start", String.valueOf(start),
-                "size", String.valueOf(size)
-        );
-        return paginateList(allRequestParams, runtimeService.createProcessInstanceQuery(), "name", properties, 
-                restResponseFactory::createProcessInstanceResponseList);
+
+        List<ProcessInstanceResponse> processes = processManagementService.getAllRunningProcesses(start, size);
+        return ResponseEntity.ok(processes);
     }
 
-    // ==================== 2. SEARCH PROCESS BY BUSINESS KEY ====================
     @GetMapping("/search")
     @Operation(
             summary = "Search process instances by businessKey",
@@ -179,19 +166,16 @@ public class DefinitionsController {
     public ResponseEntity<ProcessInstanceResponse> searchProcessByBusinessKey(
             @Parameter(description = "Business key to search for (e.g., vacation_request_1764552563467)", required = true)
             @RequestParam String businessKey) {
-        
-        ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
-                .processInstanceBusinessKey(businessKey)
-                .singleResult();
 
-        if (processInstance == null) {
+        ProcessInstanceResponse response = processManagementService.searchByBusinessKey(businessKey);
+
+        if (response == null) {
             return ResponseEntity.notFound().build();
         }
 
-        return ResponseEntity.ok(restResponseFactory.createProcessInstanceResponse(processInstance));
+        return ResponseEntity.ok(response);
     }
 
-    // ==================== 3. GET PROCESS EXECUTION STATE & CONTEXT ====================
     @GetMapping("/{processInstanceId}/state")
     @Operation(
             summary = "Get current process instance state and variables",
@@ -203,33 +187,16 @@ public class DefinitionsController {
     public ResponseEntity<ProcessExecutionStateResponse> getProcessExecutionState(
             @Parameter(description = "Process instance ID", required = true)
             @PathVariable String processInstanceId) {
-        
-        ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
-                .processInstanceId(processInstanceId)
-                .singleResult();
 
-        if (processInstance == null) {
+        ProcessExecutionStateResponse response = processManagementService.getProcessExecutionState(processInstanceId);
+
+        if (response == null) {
             return ResponseEntity.notFound().build();
         }
-
-        Map<String, Object> variables = runtimeService.getVariables(processInstanceId);
-        List<String> activeActivityIds = runtimeService.getActiveActivityIds(processInstanceId);
-
-        ProcessExecutionStateResponse response = ProcessExecutionStateResponse.builder()
-                .processInstanceId(processInstanceId)
-                .processDefinitionKey(processInstance.getProcessDefinitionKey())
-                .businessKey(processInstance.getBusinessKey())
-                .isEnded(processInstance.isEnded())
-                .isSuspended(processInstance.isSuspended())
-                .activeActivityIds(activeActivityIds)
-                .variables(variables)
-                .startTime(processInstance.getStartTime())
-                .build();
 
         return ResponseEntity.ok(response);
     }
 
-    // ==================== 4. GET PROCESS EXECUTION HISTORY ====================
     @GetMapping("/{processInstanceId}/history")
     @Operation(
             summary = "Get process execution history with variable changes",
@@ -240,27 +207,11 @@ public class DefinitionsController {
     public ResponseEntity<List<ProcessStateHistoryResponse>> getProcessHistory(
             @Parameter(description = "Process instance ID", required = true)
             @PathVariable String processInstanceId) {
-        
-        List<HistoricActivityInstance> historicActivities = historyService.createHistoricActivityInstanceQuery()
-                .processInstanceId(processInstanceId)
-                .orderByHistoricActivityInstanceStartTime().asc()
-                .list();
 
-        List<ProcessStateHistoryResponse> history = historicActivities.stream()
-                .map(activity -> ProcessStateHistoryResponse.builder()
-                        .activityId(activity.getActivityId())
-                        .activityName(activity.getActivityName())
-                        .activityType(activity.getActivityType())
-                        .startTime(activity.getStartTime())
-                        .endTime(activity.getEndTime())
-                        .duration(activity.getDurationInMillis())
-                        .build())
-                .collect(Collectors.toList());
-
+        List<ProcessStateHistoryResponse> history = processManagementService.getProcessHistory(processInstanceId);
         return ResponseEntity.ok(history);
     }
 
-    // ==================== 5. GET PROCESS VARIABLES AT SPECIFIC STATE ====================
     @GetMapping("/{processInstanceId}/variables")
     @Operation(
             summary = "Get all current process variables (job context parameters)",
@@ -271,12 +222,11 @@ public class DefinitionsController {
     public ResponseEntity<Map<String, Object>> getProcessVariables(
             @Parameter(description = "Process instance ID", required = true)
             @PathVariable String processInstanceId) {
-        
-        Map<String, Object> variables = runtimeService.getVariables(processInstanceId);
+
+        Map<String, Object> variables = processManagementService.getProcessVariables(processInstanceId);
         return ResponseEntity.ok(variables);
     }
 
-    // ==================== 6. GET FAILED PROCESS INSTANCES ====================
     @GetMapping("/failed")
     @Operation(
             summary = "Get all failed process instances",
@@ -287,36 +237,11 @@ public class DefinitionsController {
     public ResponseEntity<List<FailedProcessResponse>> getFailedProcesses(
             @RequestParam(defaultValue = "0", required = false) int start,
             @RequestParam(defaultValue = "10", required = false) int size) {
-        
-        List<HistoricProcessInstance> failedProcesses = historyService.createHistoricProcessInstanceQuery()
-                .includeProcessVariables()
-                .finished()
-                .orderByProcessInstanceEndTime().desc()
-                .listPage(start, size);
 
-        List<FailedProcessResponse> failedList = new ArrayList<>();
-
-        for (HistoricProcessInstance historicInstance : failedProcesses) {
-            if (historicInstance.getDeleteReason() != null && 
-                (historicInstance.getDeleteReason().contains("error") || 
-                 historicInstance.getDeleteReason().contains("exception"))) {
-                
-                failedList.add(FailedProcessResponse.builder()
-                        .processInstanceId(historicInstance.getId())
-                        .processDefinitionKey(historicInstance.getProcessDefinitionKey())
-                        .businessKey(historicInstance.getBusinessKey())
-                        .startTime(historicInstance.getStartTime())
-                        .endTime(historicInstance.getEndTime())
-                        .deleteReason(historicInstance.getDeleteReason())
-                        .variables(historicInstance.getProcessVariables())
-                        .build());
-            }
-        }
-
-        return ResponseEntity.ok(failedList);
+        List<FailedProcessResponse> failedProcesses = processManagementService.getFailedProcesses(start, size);
+        return ResponseEntity.ok(failedProcesses);
     }
 
-    // ==================== 7. GET FAILED JOBS (DEADLETTER JOBS) ====================
     @GetMapping("/failed-jobs")
     @Operation(
             summary = "Get all failed/deadletter jobs",
@@ -327,29 +252,11 @@ public class DefinitionsController {
     public ResponseEntity<List<FailedJobResponse>> getFailedJobs(
             @RequestParam(defaultValue = "0", required = false) int start,
             @RequestParam(defaultValue = "10", required = false) int size) {
-        
-        List<Job> deadletterJobs = managementService.createDeadLetterJobQuery()
-                .orderByJobCreateTime().desc()
-                .listPage(start, size);
 
-        List<FailedJobResponse> failedJobs = deadletterJobs.stream()
-                .map(job -> FailedJobResponse.builder()
-                        .jobId(job.getId())
-                        .processInstanceId(job.getProcessInstanceId())
-                        .processDefinitionId(job.getProcessDefinitionId())
-                        .jobHandlerType(job.getJobHandlerType())
-                        .exceptionMessage(job.getExceptionMessage())
-                        .retries(job.getRetries())
-                        .createTime(job.getCreateTime())
-                        .dueDate(job.getDuedate())
-                        .tenantId(job.getTenantId())
-                        .build())
-                .collect(Collectors.toList());
-
+        List<FailedJobResponse> failedJobs = processManagementService.getFailedJobs(start, size);
         return ResponseEntity.ok(failedJobs);
     }
 
-    // ==================== 8. GET SPECIFIC FAILED JOB DETAILS ====================
     @GetMapping("/failed-jobs/{jobId}/details")
     @Operation(
             summary = "Get detailed information about a failed job",
@@ -360,34 +267,16 @@ public class DefinitionsController {
     public ResponseEntity<FailedJobDetailResponse> getFailedJobDetails(
             @Parameter(description = "Job ID", required = true)
             @PathVariable String jobId) {
-        
-        Job deadletterJob = managementService.createDeadLetterJobQuery()
-                .jobId(jobId)
-                .singleResult();
 
-        if (deadletterJob == null) {
+        FailedJobDetailResponse response = processManagementService.getFailedJobDetails(jobId);
+
+        if (response == null) {
             return ResponseEntity.notFound().build();
         }
-
-        String exceptionStackTrace = managementService.getDeadLetterJobExceptionStacktrace(jobId);
-
-        FailedJobDetailResponse response = FailedJobDetailResponse.builder()
-                .jobId(deadletterJob.getId())
-                .processInstanceId(deadletterJob.getProcessInstanceId())
-                .processDefinitionId(deadletterJob.getProcessDefinitionId())
-                .jobHandlerType(deadletterJob.getJobHandlerType())
-                .exceptionMessage(deadletterJob.getExceptionMessage())
-                .exceptionStacktrace(exceptionStackTrace)
-                .retries(deadletterJob.getRetries())
-                .createTime(deadletterJob.getCreateTime())
-                .dueDate(deadletterJob.getDuedate())
-                .tenantId(deadletterJob.getTenantId())
-                .build();
 
         return ResponseEntity.ok(response);
     }
 
-    // ==================== 9. RETRY FAILED JOB ====================
     @PostMapping("/failed-jobs/{jobId}/retry")
     @Operation(
             summary = "Retry a failed job",
@@ -402,36 +291,21 @@ public class DefinitionsController {
             @PathVariable String jobId,
             @Parameter(description = "Number of retries to allow (default: 3)")
             @RequestParam(defaultValue = "3", required = false) int retries) {
-        
-        try {
-            Job deadletterJob = managementService.createDeadLetterJobQuery()
-                    .jobId(jobId)
-                    .singleResult();
 
-            if (deadletterJob == null) {
+        try {
+            RetryJobResponse response = processManagementService.retryFailedJob(jobId, retries);
+
+            if (response == null) {
                 return ResponseEntity.notFound().build();
             }
 
-            managementService.moveDeadLetterJobToExecutableJob(jobId, retries);
-
-            RetryJobResponse response = RetryJobResponse.builder()
-                    .jobId(jobId)
-                    .message("Job moved to executable queue for retry")
-                    .retries(retries)
-                    .status("QUEUED_FOR_RETRY")
-                    .timestamp(new Date())
-                    .build();
-
-            log.info("Job {} moved to executable queue with {} retries", jobId, retries);
             return ResponseEntity.ok(response);
-
-        } catch (Exception e) {
+        } catch (ProcessManagementService.ProcessManagementException e) {
             log.error("Error retrying job {}", jobId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // ==================== 10. REPLAY FAILED PROCESS ====================
     @PostMapping("/{processDefinitionKey}/replay")
     @Operation(
             summary = "Replay/restart a failed process instance",
@@ -447,50 +321,23 @@ public class DefinitionsController {
             @RequestParam String originalBusinessKey,
             @Parameter(description = "Optional new business key (if different from original)")
             @RequestParam(required = false) String newBusinessKey) {
-        
-        try {
-            // Get original process to retrieve its variables
-            HistoricProcessInstance originalProcess = historyService.createHistoricProcessInstanceQuery()
-                    .processDefinitionKey(processDefinitionKey)
-                    .processInstanceBusinessKey(originalBusinessKey)
-                    .singleResult();
 
-            if (originalProcess == null) {
+        try {
+            ProcessReplayResponse response = processManagementService.replayFailedProcess(
+                    processDefinitionKey, originalBusinessKey, newBusinessKey);
+
+            if (response == null) {
                 return ResponseEntity.notFound().build();
             }
 
-            // Retrieve variables from original process
-            Map<String, Object> processVariables = originalProcess.getProcessVariables();
-
-            // Start new process instance with same variables
-            String businessKeyForNewProcess = newBusinessKey != null ? newBusinessKey : originalBusinessKey + "_replay_" + System.currentTimeMillis();
-            
-            ProcessInstance newProcess = runtimeService.startProcessInstanceByKey(
-                    processDefinitionKey,
-                    businessKeyForNewProcess,
-                    processVariables
-            );
-
-            ProcessReplayResponse response = ProcessReplayResponse.builder()
-                    .newProcessInstanceId(newProcess.getId())
-                    .originalProcessInstanceId(originalProcess.getId())
-                    .processDefinitionKey(processDefinitionKey)
-                    .businessKey(businessKeyForNewProcess)
-                    .variablesCount(processVariables.size())
-                    .status("STARTED")
-                    .timestamp(new Date())
-                    .build();
-
-            log.info("Process replay initiated. Original: {}, New: {}", originalProcess.getId(), newProcess.getId());
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
-
-        } catch (Exception e) {
-            log.error("Error replaying process for key: {} with business key: {}", processDefinitionKey, originalBusinessKey, e);
+        } catch (ProcessManagementService.ProcessManagementException e) {
+            log.error("Error replaying process for key: {} with business key: {}",
+                    processDefinitionKey, originalBusinessKey, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // ==================== 11. GET PROCESS INSTANCE WITH COMPLETE DETAILS ====================
     @GetMapping("/{processInstanceId}/details")
     @Operation(
             summary = "Get comprehensive process instance details",
@@ -501,48 +348,16 @@ public class DefinitionsController {
     public ResponseEntity<ProcessDetailResponse> getProcessInstanceDetails(
             @Parameter(description = "Process instance ID", required = true)
             @PathVariable String processInstanceId) {
-        
-        ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
-                .processInstanceId(processInstanceId)
-                .singleResult();
 
-        if (processInstance == null) {
+        ProcessDetailResponse response = processManagementService.getProcessDetails(processInstanceId);
+
+        if (response == null) {
             return ResponseEntity.notFound().build();
         }
-
-        List<String> activeActivityIds = runtimeService.getActiveActivityIds(processInstanceId);
-        Map<String, Object> variables = runtimeService.getVariables(processInstanceId);
-
-        List<HistoricActivityInstance> historicActivities = historyService.createHistoricActivityInstanceQuery()
-                .processInstanceId(processInstanceId)
-                .orderByHistoricActivityInstanceStartTime().asc()
-                .list();
-
-        ProcessDetailResponse response = ProcessDetailResponse.builder()
-                .processInstanceId(processInstance.getId())
-                .processDefinitionKey(processInstance.getProcessDefinitionKey())
-                .processDefinitionId(processInstance.getProcessDefinitionId())
-                .businessKey(processInstance.getBusinessKey())
-                .isEnded(processInstance.isEnded())
-                .isSuspended(processInstance.isSuspended())
-                .startTime(processInstance.getStartTime())
-                .activeActivityIds(activeActivityIds)
-                .variables(variables)
-                .executionHistory(historicActivities.stream()
-                        .map(activity -> new ProcessDetailResponse.ActivityDetail(
-                                activity.getActivityId(),
-                                activity.getActivityName(),
-                                activity.getActivityType(),
-                                activity.getStartTime(),
-                                activity.getEndTime()
-                        ))
-                        .collect(Collectors.toList()))
-                .build();
 
         return ResponseEntity.ok(response);
     }
 
-    // ==================== 12. GET RUNNING PROCESSES BY DEFINITION KEY ====================
     @GetMapping("/running/{processDefinitionKey}")
     @Operation(
             summary = "Get running processes for a specific definition",
@@ -554,19 +369,13 @@ public class DefinitionsController {
             @PathVariable String processDefinitionKey,
             @RequestParam(defaultValue = "0", required = false) int start,
             @RequestParam(defaultValue = "10", required = false) int size) {
-        
-        List<ProcessInstance> runningProcesses = runtimeService.createProcessInstanceQuery()
-                .processDefinitionKey(processDefinitionKey)
-                .listPage(start, size);
 
-        List<ProcessInstanceResponse> responses = runningProcesses.stream()
-                .map(restResponseFactory::createProcessInstanceResponse)
-                .collect(Collectors.toList());
-
+        List<ProcessInstanceResponse> responses = processManagementService.getRunningProcessesByDefinition(
+                processDefinitionKey, start, size);
         return ResponseEntity.ok(responses);
     }
 
-    // ==================== RESPONSE DTOs ====================
+    // ==================== PROPERTIES ====================
 
     private static final Map<String, QueryProperty> properties = new HashMap<>();
 

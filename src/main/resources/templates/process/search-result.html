@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Results - Flowable Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #3b82f6;
+            --success: #10b981;
+            --light: #f9fafb;
+            --border: #e5e7eb;
+            --text-sec: #6b7280;
+            --text: #111827;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+
+        header h1 {
+            font-size: 2rem;
+            color: var(--primary);
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .nav {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .nav a {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            color: var(--text-sec);
+            border-radius: 8px;
+            text-decoration: none;
+        }
+
+        .nav a.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+        }
+
+        h2 {
+            margin-bottom: 1.5rem;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--light);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-sec);
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: var(--light);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .badge-info {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--primary);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-sec {
+            background: var(--light);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .paginate {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .paginate a, .paginate span {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+
+        .paginate a:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .paginate .dis {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-sec);
+        }
+
+        .actions {
+            margin-top: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            table {
+                font-size: 0.875rem;
+            }
+
+            th, td {
+                padding: 0.75rem 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>🔍 Search Results</h1>
+    </header>
+
+    <nav class="nav">
+        <a href="/ui/process">Dashboard</a>
+        <a href="/ui/process/running">Running</a>
+        <a href="/ui/process/failed">Failed</a>
+        <a href="/ui/process/failed-jobs">Jobs</a>
+        <a href="/ui/process/search" class="active">Search</a>
+    </nav>
+
+    <div class="content">
+        <h2>Results <span style="font-size: 0.9rem; color: var(--text-sec);">(<span
+                th:text="${total}">0</span> found)</span></h2>
+
+        <div th:if="${results.isEmpty()}" class="empty">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+            <p>No processes match your search</p>
+        </div>
+
+        <div th:if="${!results.isEmpty()}" class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Process ID</th>
+                    <th>Definition Key</th>
+                    <th>Business Key</th>
+                    <th>Started</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="p : ${results}">
+                    <td><code style="font-size: 0.85rem;" th:text="${#strings.abbreviate(p.id, 18)}"></code></td>
+                    <td th:text="${p.processDefinitionKey}"></td>
+                    <td><strong th:text="${p.businessKey}"></strong></td>
+                    <td th:text="${#dates.format(p.startTime, 'yyyy-MM-dd HH:mm')}"></td>
+                    <td>
+                        <span th:if="${!p.ended}" class="badge">RUNNING</span>
+                        <span th:if="${p.ended}" class="badge badge-info">COMPLETED</span>
+                    </td>
+                    <td>
+                        <a th:href="@{/ui/process/{id}/view(id=${p.id})}" class="btn btn-sm">View</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div class="paginate">
+                <a th:if="${hasPrevious}"
+                   th:href="@{/ui/process/search-advanced(page=${page - 1}, size=${size}, processDefinitionKey=${searchDefinitionKey}, businessKey=${searchBusinessKey})}"
+                   class="btn-sec" style="padding: 0.5rem 1rem;">← Previous</a>
+                <span th:unless="${hasPrevious}" class="paginate dis">← Previous</span>
+
+                <span style="padding: 0.5rem 1rem;">
+                        Page <span th:text="${page + 1}"></span> / <span th:text="${totalPages}"></span>
+                    </span>
+
+                <a th:if="${hasNext}"
+                   th:href="@{/ui/process/search-advanced(page=${page + 1}, size=${size}, processDefinitionKey=${searchDefinitionKey}, businessKey=${searchBusinessKey})}"
+                   class="btn-sec" style="padding: 0.5rem 1rem;">Next →</a>
+                <span th:unless="${hasNext}" class="paginate dis">Next →</span>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a href="/ui/process/search" class="btn btn-sec">← New Search</a>
+            <a href="/ui/process" class="btn btn-sec">↑ Dashboard</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

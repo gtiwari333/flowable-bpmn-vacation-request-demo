@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Process Details - Flowable Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #3b82f6;
+            --success: #10b981;
+            --border: #e5e7eb;
+            --light: #f9fafb;
+            --text: #111827;
+            --text-sec: #6b7280;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+
+        header h1 {
+            font-size: 2rem;
+            color: var(--primary);
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .nav {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .nav a {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            color: var(--text-sec);
+            border-radius: 8px;
+            text-decoration: none;
+        }
+
+        .nav a.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+        }
+
+        h2 {
+            margin-bottom: 1.5rem;
+        }
+
+        .header-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1));
+            border-radius: 12px;
+        }
+
+        .info-item label {
+            font-size: 0.75rem;
+            color: var(--text-sec);
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            width: fit-content;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        .tab {
+            padding: 1rem;
+            border: none;
+            background: transparent;
+            color: var(--text-sec);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-cont {
+            display: none;
+        }
+
+        .tab-cont.active {
+            display: block;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--light);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-sec);
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover {
+            background: var(--light);
+        }
+
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 2rem;
+            margin-left: 60px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -41px;
+            top: 0;
+            width: 20px;
+            height: 20px;
+            background: var(--primary);
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 0 2px var(--border);
+        }
+
+        .timeline-act {
+            background: var(--light);
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+        }
+
+        .btn-sec {
+            background: var(--light);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .empty {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-sec);
+        }
+
+        @media (max-width: 768px) {
+            .header-info {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>📋 Process Details</h1>
+    </header>
+
+    <nav class="nav">
+        <a href="/ui/process">Dashboard</a>
+        <a href="/ui/process/running">Running</a>
+        <a href="/ui/process/search">Search</a>
+    </nav>
+
+    <div class="content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+            <h2 style="margin: 0;">Process Information</h2>
+            <a href="/ui/process/running" class="btn btn-sec">← Back</a>
+        </div>
+
+        <div class="header-info">
+            <div class="info-item">
+                <label>Process ID</label>
+                <code style="word-break: break-all; font-size: 0.9rem;" th:text="${process.processInstanceId}"></code>
+            </div>
+            <div class="info-item">
+                <label>Definition Key</label>
+                <strong th:text="${process.processDefinitionKey}"></strong>
+            </div>
+            <div class="info-item">
+                <label>Business Key</label>
+                <strong th:text="${process.businessKey}"></strong>
+            </div>
+            <div class="info-item">
+                <label>Status</label>
+                <span th:if="${!process.isEnded}" class="badge">RUNNING</span>
+                <span th:if="${process.isEnded}" class="badge"
+                      style="background: rgba(59, 130, 246, 0.1); color: var(--primary);">COMPLETED</span>
+            </div>
+            <div class="info-item">
+                <label>Started</label>
+                <span th:text="${#dates.format(process.startTime, 'yyyy-MM-dd HH:mm:ss')}"></span>
+            </div>
+            <div class="info-item">
+                <label>Active Activities</label>
+                <div>
+                    <span th:each="a : ${process.activeActivityIds}" class="badge" style="margin-right: 0.5rem;"
+                          th:text="${a}"></span>
+                    <span th:if="${process.activeActivityIds.isEmpty()}" style="color: var(--text-sec);">None</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('variables')">Variables</button>
+            <button class="tab" onclick="showTab('history')">History</button>
+            <button class="tab" onclick="showTab('diagram')">Diagram</button>
+        </div>
+
+        <!-- Variables Tab -->
+        <div id="variables" class="tab-cont active">
+            <div th:if="${process.variables.isEmpty()}" class="empty">
+                <p>No variables in this process</p>
+            </div>
+            <table th:if="${!process.variables.isEmpty()}">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Value</th>
+                    <th>Type</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="v : ${process.variables}">
+                    <td style="font-weight: 600;" th:text="${v.key}"></td>
+                    <td><code style="word-break: break-all;" th:text="${v.value}"></code></td>
+                    <td><span class="badge" style="background: rgba(59, 130, 246, 0.1); color: var(--primary);"
+                              th:text="${v.value == null ? 'null' : #strings.abbreviate(v.value.getClass(), 15)}"></span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- History Tab -->
+        <div id="history" class="tab-cont">
+            <div th:if="${process.executionHistory.isEmpty()}" class="empty">
+                <p>No execution history</p>
+            </div>
+            <div th:if="${!process.executionHistory.isEmpty()}" class="timeline">
+                <div th:each="act : ${process.executionHistory}" class="timeline-item">
+                    <div class="timeline-act">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                            <div>
+                                <h4 style="margin: 0; color: var(--text);" th:text="${act.activityName}"></h4>
+                                <code style="font-size: 0.85rem; color: var(--text-sec);"
+                                      th:text="${act.activityId}"></code>
+                            </div>
+                            <span class="badge" style="background: rgba(59, 130, 246, 0.1); color: var(--primary);"
+                                  th:text="${act.activityType}"></span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1rem;">
+                            <div>
+                                <label style="font-size: 0.75rem; color: var(--text-sec); text-transform: uppercase;">Started</label>
+                                <div style="font-size: 0.9rem;"
+                                     th:text="${#dates.format(act.startTime, 'HH:mm:ss')}"></div>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.75rem; color: var(--text-sec); text-transform: uppercase;">Ended</label>
+                                <div style="font-size: 0.9rem;"
+                                     th:text="${act.endTime != null ? #dates.format(act.endTime, 'HH:mm:ss') : 'In Progress'}"></div>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.75rem; color: var(--text-sec); text-transform: uppercase;">Duration</label>
+                                <div style="font-size: 0.9rem; color: var(--primary); font-weight: 600;"
+                                     th:text="${act.duration != null ? act.duration + 'ms' : '-'}"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Diagram Tab -->
+        <div id="diagram" class="tab-cont">
+            <div style="text-align: center;">
+                <img th:src="@{/api/process/{key}/{businessKey}/image(key=${process.processDefinitionKey}, businessKey=${process.businessKey})}"
+                     alt="Process Diagram"
+                     style="max-width: 100%; height: auto; border: 1px solid var(--border); border-radius: 8px;">
+            </div>
+        </div>
+
+        <div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+            <a href="/ui/process/running" class="btn btn-sec">← Back</a>
+            <a href="/ui/process" class="btn btn-sec">↑ Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showTab(name) {
+        document.querySelectorAll('.tab-cont').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        document.getElementById(name).classList.add('active');
+        event.target.classList.add('active');
+    }
+</script>
+</body>
+</html>

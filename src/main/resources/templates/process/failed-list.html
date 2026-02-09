@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Failed Processes - Flowable Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #3b82f6;
+            --danger: #ef4444;
+            --success: #10b981;
+            --light: #f9fafb;
+            --border: #e5e7eb;
+            --text-sec: #6b7280;
+            --text: #111827;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            color: var(--primary);
+            font-weight: 700;
+        }
+
+        .nav {
+            background: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .nav a {
+            padding: 0.75rem 1.5rem;
+            background: transparent;
+            color: var(--text-sec);
+            border-radius: 8px;
+            text-decoration: none;
+        }
+
+        .nav a.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        .content {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+        }
+
+        h2 {
+            margin-bottom: 1.5rem;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-sec);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--light);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-sec);
+            border-bottom: 2px solid var(--border);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            background: rgba(239, 68, 68, 0.02);
+        }
+
+        tr:hover {
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-sec {
+            background: var(--light);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ok {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-ok:hover {
+            background: #059669;
+        }
+
+        .paginate {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .paginate a, .paginate span {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: 6px;
+            text-decoration: none;
+        }
+
+        .paginate a:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .paginate .dis {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            table {
+                font-size: 0.875rem;
+            }
+
+            th, td {
+                padding: 0.75rem 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>❌ Failed Processes</h1>
+        <a href="/ui/process" class="btn btn-sec">Home</a>
+    </header>
+
+    <nav class="nav">
+        <a href="/ui/process">Dashboard</a>
+        <a href="/ui/process/running">Running</a>
+        <a href="/ui/process/failed" class="active">Failed</a>
+        <a href="/ui/process/failed-jobs">Jobs</a>
+        <a href="/ui/process/search">Search</a>
+    </nav>
+
+    <div class="content">
+        <h2>Failed Processes <span style="font-size: 0.9rem; color: var(--text-sec);">(<span th:text="${total}">0</span>)</span>
+        </h2>
+
+        <div th:if="${failedProcesses.isEmpty()}" class="empty">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+            <p>No failed processes found!</p>
+        </div>
+
+        <div th:if="${!failedProcesses.isEmpty()}" class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Process ID</th>
+                    <th>Definition Key</th>
+                    <th>Business Key</th>
+                    <th>Failed</th>
+                    <th>Reason</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="p : ${failedProcesses}">
+                    <td><code style="font-size: 0.85rem;"
+                              th:text="${#strings.abbreviate(p.processInstanceId, 18)}"></code></td>
+                    <td th:text="${p.processDefinitionKey}"></td>
+                    <td><strong th:text="${p.businessKey}"></strong></td>
+                    <td th:text="${#dates.format(p.endTime, 'yyyy-MM-dd HH:mm')}"></td>
+                    <td>
+                        <span class="badge" th:title="${p.deleteReason}"
+                              th:text="${#strings.abbreviate(p.deleteReason, 45)}"></span>
+                    </td>
+                    <td>
+                        <a th:href="@{/ui/process/{id}/view(id=${p.processInstanceId})}" class="btn btn-sm">Details</a>
+                        <form th:action="@{/ui/process/{key}/replay(key=${p.processDefinitionKey})}" method="post"
+                              style="display: inline;">
+                            <input type="hidden" name="originalBusinessKey" th:value="${p.businessKey}">
+                            <input type="hidden" name="redirectPage" value="0">
+                            <button type="submit" class="btn btn-sm btn-ok" onclick="return confirm('Replay?');">
+                                Replay
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div class="paginate">
+                <a th:if="${hasPrevious}" th:href="@{/ui/process/failed(page=${page - 1}, size=${size})}"
+                   class="btn-sec" style="padding: 0.5rem 1rem;">← Previous</a>
+                <span th:unless="${hasPrevious}" class="paginate dis">← Previous</span>
+
+                <span style="padding: 0.5rem 1rem;">
+                        Page <span th:text="${page + 1}"></span> / <span th:text="${totalPages}"></span>
+                    </span>
+
+                <a th:if="${hasNext}" th:href="@{/ui/process/failed(page=${page + 1}, size=${size})}" class="btn-sec"
+                   style="padding: 0.5rem 1rem;">Next →</a>
+                <span th:unless="${hasNext}" class="paginate dis">Next →</span>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

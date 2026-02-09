@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.flowable.rest.service.api.runtime.process.ProcessInstanceResponse;
 
 import java.util.*;
 
@@ -168,5 +169,8 @@ class ProcessDetailResponse {
         private String activityType;
         private Date startTime;
         private Date endTime;
+        public long getDuration(){
+            return endTime.getTime() - startTime.getTime();
+        }
     }
 }
